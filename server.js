@@ -50,6 +50,26 @@ function initializeDatabase() {
       });
     }
   });
+  
+  // Create results table for storing student exam results
+  db.run(`
+    CREATE TABLE IF NOT EXISTS results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_name TEXT NOT NULL,
+      total_questions INTEGER NOT NULL,
+      correct_answers INTEGER NOT NULL,
+      percentage INTEGER NOT NULL,
+      passed INTEGER NOT NULL,
+      answers TEXT NOT NULL,
+      submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Error creating results table:', err);
+    } else {
+      console.log('Results table ready');
+    }
+  });
 }
 
 // Insert sample questions
@@ -108,38 +128,67 @@ app.get('/api/questions', (req, res) => {
 
 // POST submit exam and get score
 app.post('/api/submit', (req, res) => {
-  const { answers } = req.body; // answers should be an object like { "1": 2, "2": 0, ... }
+  const { studentName, answers } = req.body;
+  
+  if (!studentName || !studentName.trim()) {
+    return res.status(400).json({ error: 'Student name is required' });
+  }
   
   if (!answers || typeof answers !== 'object') {
     return res.status(400).json({ error: 'Invalid answers format' });
   }
   
   // Get all questions with correct answers
-  db.all('SELECT id, correct_index FROM questions', [], (err, rows) => {
+  db.all('SELECT * FROM questions', [], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
     
     let correctCount = 0;
     const totalQuestions = rows.length;
+    const detailedResults = [];
     
-    // Check each answer
+    // Check each answer and build detailed results
     rows.forEach(question => {
       const studentAnswer = answers[question.id];
-      if (studentAnswer === question.correct_index) {
+      const isCorrect = studentAnswer === question.correct_index;
+      
+      if (isCorrect) {
         correctCount++;
       }
+      
+      detailedResults.push({
+        questionId: question.id,
+        questionText: question.text,
+        options: [question.option_a, question.option_b, question.option_c, question.option_d],
+        studentAnswer: studentAnswer,
+        correctAnswer: question.correct_index,
+        isCorrect: isCorrect
+      });
     });
     
     const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     const passed = percentage >= PASS_THRESHOLD;
+    
+    // Save result to database
+    db.run(
+      `INSERT INTO results (student_name, total_questions, correct_answers, percentage, passed, answers)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [studentName, totalQuestions, correctCount, percentage, passed ? 1 : 0, JSON.stringify(answers)],
+      function(err) {
+        if (err) {
+          console.error('Error saving result:', err);
+        }
+      }
+    );
     
     res.json({
       total: totalQuestions,
       correct: correctCount,
       percentage: percentage,
       passed: passed,
-      message: passed ? 'Congratulations! You passed!' : 'Sorry, you did not pass. Keep studying!'
+      message: passed ? 'Congratulations! You passed!' : 'Sorry, you did not pass. Keep studying!',
+      detailedResults: detailedResults
     });
   });
 });
@@ -171,6 +220,31 @@ app.get('/api/admin/questions', checkAdminAuth, (req, res) => {
     
     res.json(questions);
   });
+});
+
+// GET all student results for admin
+app.get('/api/admin/results', checkAdminAuth, (req, res) => {
+  db.all(
+    'SELECT * FROM results ORDER BY submitted_at DESC',
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      const results = rows.map(row => ({
+        id: row.id,
+        studentName: row.student_name,
+        totalQuestions: row.total_questions,
+        correctAnswers: row.correct_answers,
+        percentage: row.percentage,
+        passed: row.passed === 1,
+        submittedAt: row.submitted_at
+      }));
+      
+      res.json(results);
+    }
+  );
 });
 
 // POST add new question

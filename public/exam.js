@@ -2,11 +2,25 @@
 
 let questions = []; // Store all questions
 let studentAnswers = {}; // Store student's answers
+let studentName = ''; // Store student name
 
-// Load questions when page loads
-document.addEventListener('DOMContentLoaded', () => {
+// Start exam after entering name
+function startExam() {
+    const nameInput = document.getElementById('studentName');
+    studentName = nameInput.value.trim();
+    
+    if (!studentName) {
+        alert('Please enter your name to start the exam.');
+        return;
+    }
+    
+    // Hide name section and show loading
+    document.getElementById('nameSection').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    
+    // Load questions
     loadQuestions();
-});
+}
 
 // Fetch questions from server
 async function loadQuestions() {
@@ -105,7 +119,10 @@ document.getElementById('examForm').addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ answers: studentAnswers })
+            body: JSON.stringify({ 
+                studentName: studentName,
+                answers: studentAnswers 
+            })
         });
         
         if (!response.ok) {
@@ -133,6 +150,7 @@ function showResults(result) {
     resultsSection.style.display = 'block';
     
     // Populate results
+    document.getElementById('studentNameDisplay').textContent = studentName;
     document.getElementById('totalQuestions').textContent = result.total;
     document.getElementById('correctAnswers').textContent = result.correct;
     document.getElementById('percentage').textContent = result.percentage + '%';
@@ -142,6 +160,66 @@ function showResults(result) {
     messageDiv.textContent = result.message;
     messageDiv.className = result.passed ? 'result-message pass' : 'result-message fail';
     
+    // Display detailed results
+    showDetailedResults(result.detailedResults);
+    
     // Scroll to top to show results
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Show detailed question-by-question results
+function showDetailedResults(detailedResults) {
+    const container = document.getElementById('detailedResultsContainer');
+    container.innerHTML = '';
+    
+    detailedResults.forEach((result, index) => {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'question-item';
+        
+        // Question text
+        const questionText = document.createElement('div');
+        questionText.className = 'question-item-text';
+        questionText.innerHTML = `${index + 1}. ${result.questionText} ${result.isCorrect ? '<span style="color: #4CAF50; font-weight: bold;">✓ Correct</span>' : '<span style="color: #f44336; font-weight: bold;">✗ Wrong</span>'}`;
+        resultDiv.appendChild(questionText);
+        
+        // Options with highlighting
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'question-item-options';
+        
+        result.options.forEach((option, optionIndex) => {
+            const optionP = document.createElement('div');
+            const letter = String.fromCharCode(65 + optionIndex);
+            
+            let optionHTML = `${letter}. ${option}`;
+            
+            // Highlight student's answer
+            if (optionIndex === result.studentAnswer) {
+                if (result.isCorrect) {
+                    optionHTML += ' <span style="color: #4CAF50; font-weight: bold;">← Your answer (Correct!)</span>';
+                } else {
+                    optionHTML += ' <span style="color: #f44336; font-weight: bold;">← Your answer (Wrong)</span>';
+                }
+            }
+            
+            // Show correct answer if student was wrong
+            if (!result.isCorrect && optionIndex === result.correctAnswer) {
+                optionHTML += ' <span style="color: #4CAF50; font-weight: bold;">← Correct Answer</span>';
+            }
+            
+            optionP.innerHTML = optionHTML;
+            optionP.style.padding = '8px';
+            
+            // Background color for correct/wrong answers
+            if (optionIndex === result.studentAnswer && !result.isCorrect) {
+                optionP.style.backgroundColor = '#ffebee';
+            } else if (optionIndex === result.correctAnswer) {
+                optionP.style.backgroundColor = '#e8f5e9';
+            }
+            
+            optionsDiv.appendChild(optionP);
+        });
+        
+        resultDiv.appendChild(optionsDiv);
+        container.appendChild(resultDiv);
+    });
 }

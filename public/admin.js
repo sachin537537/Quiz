@@ -3,6 +3,8 @@
 let adminPassword = ''; // Store admin password after login
 let questions = []; // Store all questions
 let editingQuestionId = null; // Track which question is being edited
+let studentResults = []; // Store student results
+let currentTab = 'questions'; // Track current tab
 
 // Allow Enter key to login
 document.getElementById('adminPassword')?.addEventListener('keypress', (e) => {
@@ -53,6 +55,9 @@ async function loadQuestions() {
         
         // Render questions
         renderQuestions();
+        
+        // Also load results
+        loadResults();
         
     } catch (error) {
         console.error('Error loading questions:', error);
@@ -119,6 +124,89 @@ function renderQuestions() {
         questionItem.appendChild(optionsDiv);
         container.appendChild(questionItem);
     });
+}
+
+// Load student results
+async function loadResults() {
+    try {
+        const response = await fetch('/api/admin/results', {
+            headers: {
+                'admin-password': adminPassword
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load results');
+        }
+        
+        studentResults = await response.json();
+        renderResults();
+        
+    } catch (error) {
+        console.error('Error loading results:', error);
+        document.getElementById('resultsListContainer').innerHTML = '<p style="color: #f44336; text-align: center;">Error loading results</p>';
+    }
+}
+
+// Render student results
+function renderResults() {
+    const container = document.getElementById('resultsListContainer');
+    
+    if (studentResults.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No student results yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    studentResults.forEach((result, index) => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'question-item';
+        resultItem.style.borderLeft = result.passed ? '4px solid #4CAF50' : '4px solid #f44336';
+        
+        const header = document.createElement('div');
+        header.style.marginBottom = '10px';
+        
+        const studentInfo = document.createElement('div');
+        studentInfo.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <strong style="font-size: 1.2em;">${index + 1}. ${result.studentName}</strong>
+                    <span style="margin-left: 15px; color: #666;">${new Date(result.submittedAt).toLocaleString()}</span>
+                </div>
+                <div style="font-size: 1.1em; font-weight: bold; color: ${result.passed ? '#4CAF50' : '#f44336'};">
+                    ${result.percentage}% ${result.passed ? '✓ PASS' : '✗ FAIL'}
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; color: #666;">
+                <span>Total Questions: <strong>${result.totalQuestions}</strong></span>
+                <span>Correct Answers: <strong style="color: #4CAF50;">${result.correctAnswers}</strong></span>
+                <span>Wrong Answers: <strong style="color: #f44336;">${result.totalQuestions - result.correctAnswers}</strong></span>
+            </div>
+        `;
+        
+        header.appendChild(studentInfo);
+        resultItem.appendChild(header);
+        container.appendChild(resultItem);
+    });
+}
+
+// Switch between tabs
+function showTab(tab) {
+    currentTab = tab;
+    
+    // Update tab buttons
+    document.getElementById('questionsTab').style.borderBottom = tab === 'questions' ? '3px solid #4CAF50' : 'none';
+    document.getElementById('resultsTab').style.borderBottom = tab === 'results' ? '3px solid #4CAF50' : 'none';
+    
+    // Show/hide tab content
+    document.getElementById('questionsTabContent').style.display = tab === 'questions' ? 'block' : 'none';
+    document.getElementById('resultsTabContent').style.display = tab === 'results' ? 'block' : 'none';
+    
+    // Reload results when switching to results tab
+    if (tab === 'results') {
+        loadResults();
+    }
 }
 
 // Show modal to add new question

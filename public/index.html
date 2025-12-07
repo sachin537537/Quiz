@@ -13,8 +13,20 @@
             <p class="subtitle">Please answer all questions and submit when ready</p>
         </header>
 
+        <!-- Student Name Input (shown first) -->
+        <div id="nameSection">
+            <div class="result-card">
+                <h2>Enter Your Name</h2>
+                <div class="form-group">
+                    <label for="studentName">Your Name:</label>
+                    <input type="text" id="studentName" placeholder="Enter your full name" required>
+                </div>
+                <button onclick="startExam()" class="btn btn-primary">Start Exam</button>
+            </div>
+        </div>
+
         <!-- Loading message -->
-        <div id="loading" class="loading">Loading questions...</div>
+        <div id="loading" class="loading" style="display: none;">Loading questions...</div>
 
         <!-- Exam form (hidden initially) -->
         <form id="examForm" style="display: none;">
@@ -30,6 +42,10 @@
             <h2>Exam Results</h2>
             <div class="result-card">
                 <div class="result-item">
+                    <span class="result-label">Student Name:</span>
+                    <span class="result-value" id="studentNameDisplay"></span>
+                </div>
+                <div class="result-item">
                     <span class="result-label">Total Questions:</span>
                     <span class="result-value" id="totalQuestions">0</span>
                 </div>
@@ -43,6 +59,13 @@
                 </div>
                 <div class="result-message" id="resultMessage"></div>
             </div>
+            
+            <!-- Detailed Results -->
+            <div id="detailedResults" class="question-list">
+                <h2>Your Answers Review</h2>
+                <div id="detailedResultsContainer"></div>
+            </div>
+            
             <button onclick="location.reload()" class="btn btn-secondary">Take Exam Again</button>
         </div>
 

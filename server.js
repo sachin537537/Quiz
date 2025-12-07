@@ -10,17 +10,36 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'teacher123';
 const PASS_THRESHOLD = parseInt(process.env.PASS_THRESHOLD) || 40;
 
+// Ensure data directory exists (for Render persistent disk)
+const fs = require('fs');
+const dataDir = '/opt/render/project/data';
+if (process.env.NODE_ENV === 'production') {
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+      console.log('Created data directory:', dataDir);
+    }
+  } catch (err) {
+    console.log('Note: Could not create data directory, using local storage');
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files from 'public' folder
 
 // Initialize SQLite database
-const db = new sqlite3.Database('./exam.db', (err) => {
+// Use /opt/render/project/data for persistent storage on Render
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/opt/render/project/data/exam.db' 
+  : './exam.db';
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err);
   } else {
-    console.log('Connected to SQLite database');
+    console.log('Connected to SQLite database at:', dbPath);
     initializeDatabase();
   }
 });

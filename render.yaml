@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: quiz-exam
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PASS_THRESHOLD
+        sync: false
+    disk:
+      name: exam-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

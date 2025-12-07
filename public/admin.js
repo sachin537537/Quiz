@@ -478,9 +478,13 @@ function parseQuestion(content) {
         correctIndex: -1
     };
     
-    // Find where option A starts
-    const optionAMatch = content.match(/\s+A\.\s*/i);
+    // Remove extra whitespace
+    content = content.trim();
+    
+    // Find where option A starts (case insensitive, allow multiple spaces)
+    const optionAMatch = content.match(/\s+A\.\s+/i);
     if (!optionAMatch) {
+        console.log('No option A found in:', content);
         return null;
     }
     
@@ -488,24 +492,28 @@ function parseQuestion(content) {
     result.text = content.substring(0, optionAMatch.index).trim();
     
     // Extract all options using a more flexible pattern
-    // This handles options separated by spaces and supports any language
     const optionsText = content.substring(optionAMatch.index);
     
-    // Match each option letter followed by period and text
-    const aMatch = optionsText.match(/A\.\s*(.+?)(?=\s+B\.|$)/i);
-    const bMatch = optionsText.match(/B\.\s*(.+?)(?=\s+C\.|$)/i);
-    const cMatch = optionsText.match(/C\.\s*(.+?)(?=\s+D\.|$)/i);
-    const dMatch = optionsText.match(/D\.\s*(.+?)$/i);
+    // Match each option - allow multiple spaces, case insensitive
+    const aMatch = optionsText.match(/A\.\s+(.+?)(?=\s+B\.|$)/i);
+    const bMatch = optionsText.match(/B\.\s+(.+?)(?=\s+C\.|$)/i);
+    const cMatch = optionsText.match(/C\.\s+(.+?)(?=\s+D\.|$)/i);
+    const dMatch = optionsText.match(/D\.\s+(.+?)$/i);
     
     if (aMatch) result.options[0] = aMatch[1].trim();
     if (bMatch) result.options[1] = bMatch[1].trim();
     if (cMatch) result.options[2] = cMatch[1].trim();
     if (dMatch) result.options[3] = dMatch[1].trim();
     
+    // Debug log
+    console.log('Parsed question:', result.text);
+    console.log('Options:', result.options);
+    
     // Verify we got all 4 options
-    if (result.options.length === 4 && result.options.every(opt => opt)) {
+    if (result.options.length === 4 && result.options.every(opt => opt && opt.length > 0)) {
         return result;
     }
     
+    console.log('Failed to parse all options');
     return null;
 }

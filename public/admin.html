@@ -135,14 +135,21 @@
             <div class="form-group">
                 <label>Paste your questions below:</label>
                 <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
-                    <strong>Format:</strong><br>
-                    1. Question text? A. Option A B. Option B C. Option C D. Option D<br>
-                    2. Question text? A. Option A B. Option B C. Option C D. Option D<br>
-                    <br>
-                    <strong>Answer Key (below questions):</strong><br>
-                    ANS KEY<br>
-                    1 C<br>
-                    2 D
+                    <strong>Format Example:</strong><br>
+                    <code style="background: #f0f0f0; padding: 10px; display: block; margin-top: 5px; white-space: pre-wrap; font-size: 0.85em;">
+1. What is 2+2?  A. 1 B. 2 C. 3 D. 4
+
+2. What is the capital of France?  A. London B. Berlin C. Paris D. Madrid
+
+ANS KEY
+1	D
+2	C</code>
+                    <strong style="color: #f44336; display: block; margin-top: 10px;">Important:</strong><br>
+                    • Each question on one line<br>
+                    • Space before A. B. C. D.<br>
+                    • Blank line between questions<br>
+                    • Answer key at bottom with "ANS KEY"<br>
+                    • Answer format: number TAB/SPACE letter
                 </p>
                 <textarea id="bulkQuestionsText" rows="15" placeholder="Paste your questions and answer key here..." style="width: 100%; font-family: monospace;"></textarea>
             </div>

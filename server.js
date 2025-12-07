@@ -12,15 +12,27 @@ const PASS_THRESHOLD = parseInt(process.env.PASS_THRESHOLD) || 40;
 
 // Ensure data directory exists (for Render persistent disk)
 const fs = require('fs');
-const dataDir = '/opt/render/project/data';
-if (process.env.NODE_ENV === 'production') {
+const path = require('path');
+
+// Try multiple paths for database storage
+let dbPath = './exam.db'; // Default local path
+
+if (process.env.RENDER) {
+  // On Render, try persistent disk first, fallback to /tmp
+  const persistentPath = '/opt/render/project/data';
+  const tmpPath = '/tmp';
+  
   try {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-      console.log('Created data directory:', dataDir);
+    // Try to create persistent directory
+    if (!fs.existsSync(persistentPath)) {
+      fs.mkdirSync(persistentPath, { recursive: true });
     }
+    dbPath = path.join(persistentPath, 'exam.db');
+    console.log('Using persistent storage at:', dbPath);
   } catch (err) {
-    console.log('Note: Could not create data directory, using local storage');
+    // Fallback to /tmp (will persist during server lifetime)
+    dbPath = path.join(tmpPath, 'exam.db');
+    console.log('Using temporary storage at:', dbPath);
   }
 }
 
@@ -30,11 +42,7 @@ app.use(express.json());
 app.use(express.static('public')); // Serve static files from 'public' folder
 
 // Initialize SQLite database
-// Use /opt/render/project/data for persistent storage on Render
-const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/opt/render/project/data/exam.db' 
-  : './exam.db';
-
+// Database path is set above based on environment
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err);
